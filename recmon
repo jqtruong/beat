@@ -1,0 +1,28 @@
+#!/bin/bash
+#
+# recmon output_file
+#
+# records from internal speakers (monitor) into `output_file'
+
+########
+# rdy? #
+########
+set_MONITOR() {
+    in=$(pacmd list | grep "\.monitor")
+    monitor=$(echo "$IN" |
+                  awk '/name: / {printf "%s", $2}' |
+                  sed -E 's/<|>//g')
+}
+
+########
+# set. #
+########
+out=${1-/tmp/rec.$(date +"%s").wav}
+in=
+monitor=
+
+########
+# go!! #
+########
+set_MONITOR
+parec -d "$MONITOR" --file-format=wav "$out"

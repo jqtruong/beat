@@ -1,0 +1,87 @@
+#+STARTUP: hidestars
+
+* How-To's
+
+** Capture sound from specific device
+   [[https://superuser.com/questions/597227/linux-arecord-capture-sound-card-output-rather-than-microphone-input][specify device to arecord]] and actual [[https://www.funwithelectronics.com/?id=95][tutorial]] followed.
+
+* [2020-09-19 Sat]
+  recording's volume is a bit low
+  #+begin_src sh
+    $ pacmd list-sources | grep -e 'index:' -e 'name:' -e device.description -e volume
+        index: 0
+      name: <alsa_output.pci-0000_00_1f.3.analog-stereo.monitor>
+      volume: front-left: 33126 /  51% / -17.78 dB,   front-right: 33126 /  51% / -17.78 dB
+      base volume: 65536 / 100% / 0.00 dB
+      volume steps: 65537
+        device.description = "Monitor of Built-in Audio Analog Stereo"
+      ,* index: 1
+      name: <alsa_input.pci-0000_00_1f.3.analog-stereo>
+      volume: front-left: 31471 /  48% / -19.11 dB,   front-right: 31471 /  48% / -19.11 dB
+      base volume: 6554 /  10% / -60.00 dB
+      volume steps: 65537
+        device.description = "Built-in Audio Analog Stereo"
+  #+end_src
+
+  to boost the mic volume, first find the index for the
+  monitor, which is 0, then set to a value between 0 and
+  65536; eg. 50% is (/ 65536 2)
+
+  #+begin_src sh
+    pacmd set-source-volume 0 65536
+  #+end_src
+
+  now record from monitor is audible... \o/
+
+* [2020-09-17 Thu]
+
+** DONE record and play successfully
+   no dice with =play= and =paplay=. the file has a size. no
+   sound is produced. =soxi= outputs:
+
+   .o0(
+   damn, now =<s= does expand to literal. see [[https://github.com/syl20bnr/spacemacs/issues/11798#issuecomment-465259918][solution]]:
+   =(require 'org-tempo)= is now required.
+   )
+
+   #+begin_src sh
+     $ pacmd list-sources | grep -e "index:" -e "name:" -e "device.description = "
+         index: 0
+       name: <alsa_output.pci-0000_00_1f.3.analog-stereo.monitor>
+         device.description = "Monitor of Built-in Audio Analog Stereo"
+       ,* index: 1
+       name: <alsa_input.pci-0000_00_1f.3.analog-stereo>
+         device.description = "Built-in Audio Analog Stereo"
+   #+end_src
+
+   the built-in audio analog stereo is the source to use,
+   but it worked from the monitor before... oh i'm dumb. the
+   mic is fine as the source, but i need to record what i'm
+   hearing!!! i should have named the files better!
+
+* [2019-03-15 Fri]
+
+** TODO beat this
+   i think i stepped in something
+   [cuz] it smells like shit
+   might be something else that
+   isn't not shit
+
+** TODO piano loops
+   see [[*play loop][play loop]]
+
+* [2018-09-23 Sun]
+
+** DONE record into loop
+   multiple sound waves at different times.
+
+   [[file:rec][rec]]: =./rec [OUTPUT_FILE (file path) [DURATION (seconds)]=
+
+*** ui would be nice
+    but later
+
+** TODO play loop
+   bash script to play with given parameters
+   
+   .o0(11 is 3... bytes!)
+   .o0(there is not a null character in =eshell/echo=)

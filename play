@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Params
+#
+# 1. file: sound file to play
+# 2. tmpo: sleep for how long until next repeat
+# 3. beat: 1 plays, 0 does not.
+
+file=$1; shift
+tmpo=$1; shift
+beat=$@
+count=${#@}
+
+[[ -e "$file" ]] || exit -1
+
+play() {
+    paplay $file &
+}
+
+miss() {
+    echo $(date +"%s%N") "womp"
+}
+
+PLAYS=$(printf "%s\n" $beat | grep 1 | wc -l)
+
+echo "play $file every $tmpo seconds for $count beats, $PLAYS on"
+
+i=0
+for i in $beat; do
+    [[ $i = 1 ]] && play # || miss
+    sleep $tmpo
+done
