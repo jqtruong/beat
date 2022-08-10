@@ -1,0 +1,19 @@
+#!/bin/awk -f
+
+BEGIN {
+    pi = atan2(0, -1)
+}
+
+/^;/ { print $0 }
+
+NF > 0 {
+    deg = to_deg($2)
+    if (deg <= -1 || deg >= 1)
+        print $0
+}
+
+END {}
+
+function to_deg(wav) {
+   return wav * 180/pi
+}
