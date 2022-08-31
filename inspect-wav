@@ -1,0 +1,56 @@
+#!/bin/awk -f
+
+BEGIN {
+  pi = atan2(0, -1)
+}
+
+action == "comments" && /^;/ { print $0 }
+
+action == "counting" && /^[^;]/ {
+  if ($2 > 0) positives++
+  else if ($2 < 0) negatives++
+  else zeroes++
+}
+
+action == "grph" && /^[^;]/ && NF > 0 {
+  deg = to_deg($2)
+  spc = sprintf("%d", deg < 0 ? deg*-1 : deg)
+  if (spc >=  1) spc++
+  if (spc <= -1) spc--
+  chr = deg >= 0 ? ">" : "<"
+  print sprintf("%" spc "s", chr)
+}
+
+action == "limits" && /^[^;]/ && NF > 0 {
+  deg = to_deg($2)
+  max = deg > max ? deg : max
+  min = deg < min ? deg : min
+}
+
+action == "stretch" && /^[^;]/ && NF > 0 {
+  for (i=0; i<scale; i++)
+    print $0
+}
+
+action == "sum" && /^[^;]/ && NF > 0 {
+  sum_acc += to_deg($2)
+}
+
+END {
+  if (action == "counting") {
+    print "negatives:", negatives
+    print "positives:", positives
+    print "zeroes:", zeroes
+  }
+
+  if (action == "limits") {
+    print "min:", min
+    print "max:", max
+  }
+
+  if (action == "sum") print "sum:", sum_acc
+}
+
+function to_deg(wav) {
+   return wav * 180/pi
+}

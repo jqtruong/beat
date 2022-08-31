@@ -1,0 +1,99 @@
+#!/bin/bash
+
+
+########
+# rdy? #
+########
+
+_set_cmd_params() {
+    _search_argv "high"  && cmd+=("-v high=$arg" )
+    _search_argv "low"   && cmd+=("-v low=$arg"  )
+    _search_argv "multi" && cmd+=("-v multi=$arg")
+    _search_argv "scale" && cmd+=("-v scale=$arg")
+    _has_arg     "timed" && cmd+=("-v timed=yes" )
+}
+
+_set_wav() {
+    [[ -z $wav ]] || return
+
+    _shift_argv
+    wav=$arg
+}
+
+# programs #
+
+dat() {
+    cmd=("awk -v action=chs -v timed=yes")
+    _set_cmd_params
+    cmd+=("-f $beat/filter-wav $in > $out.dat")
+    _run_cmd
+    in=$out.dat
+}
+
+from() {
+    _shift_argv
+    local ext=${arg##*.}
+    case "$ext" in
+        dat)
+            in=$arg
+            out=${in%.*}
+            ;;
+        wav)
+            wav=$arg
+            ;;
+        *)
+            _log "unknown file type; .$ext?"
+            exit 1
+            ;;
+    esac
+}
+
+into() {
+    _shift_argv
+    out=$arg
+}
+
+grph() {
+    cmd=("awk -v action=grph")
+    _set_cmd_params
+    cmd+=("-f $beat/filter-wav $in > $out.grph")
+    _run_cmd
+}
+
+play() {
+    cmd=("/usr/bin/play $wav")
+    if _has_arg "^[[:digit:]]+\$"
+    then cmd+=("repeat $arg")
+    fi
+
+    _run_cmd
+}
+
+wav() {
+    sox -r "$rate" -c 2 "$in" "$out.wav"
+    wav=$out.wav
+}
+
+
+########
+# set. #
+########
+
+source .blang
+argc=$#
+argv=("$@")
+cmd=()
+
+beat=$(dirname $0)
+in=
+out=
+rate=44100
+
+export AWKPATH=~/Code/beat
+
+
+########
+# go!! #
+########
+
+_process

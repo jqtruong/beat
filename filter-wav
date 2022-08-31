@@ -1,0 +1,58 @@
+#!/bin/awk -f
+
+@include "init.awk"
+
+BEGIN {
+  if (action == "grph") timed = 1
+  if (!multi) multi = 1
+  if (!scale) scale = 1
+}
+
+/^[^;]/                 &&
+  NF > 0                &&
+  (!low  || NR >= low ) &&
+  (!high || NR <= high) {
+
+  switch (action) {
+    case "ch1":
+      multi_print($2)
+      break
+
+    case "chs":
+      multi_print(spached($2, $3))
+      break
+
+    case "grph":
+      # only 1 ch for now
+      deg = to_deg($2)
+      spc = sprintf("%d", deg < 0 ? deg * -1 : deg)
+      if (spc >=  1) spc++
+      if (spc <= -1) spc--
+      chr = deg >= 0 ? "+" : ""
+      multi_print(sprintf("%" spc "s%f", chr, deg))
+      break
+
+    case "neg":
+      if ($2 < 0) multi_print(spached($2, $3))
+      break
+
+    case "pos":
+      if ($2 > 0) multi_print(spached($2, $3))
+      break
+
+    default:
+      multi_print($0)
+  }
+}
+
+END {
+}
+
+function multi_print(frame_content) {
+  for (i=0; i<multi; i++) print_frame(frame_content)
+}
+
+function spached(ch1, ch2) {
+  # return sprintf("%20s", ch1 * scale) " " sprintf("%20s", ch2 * scale)
+  return ch1 ":" ch1 * scale ", " ch2 ":" ch2 * scale
+}

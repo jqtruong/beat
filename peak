@@ -1,0 +1,32 @@
+#!/bin/awk -f
+
+@include "init.awk"
+
+BEGIN {
+}
+
+/^[^;]/               &&
+NF > 0                &&
+(!low  || NR >= low ) &&
+(!high || NR <= high) {
+    if (++n_rows == 1) {
+        prev = $2
+    }
+    else {
+        if (prev > 0 && $2 > 0) {
+            diff = $2 - prev
+
+            if (diff > 0 && $2 > peak) {
+                peak_info = NR ", " n_rows ", " $1
+                peak = $2
+            }
+        }
+        prev = $2
+    }
+}
+
+END {
+    print NR, n_rows
+    print "peaked at", peak, to_deg(peak)
+    print peak_info
+}
