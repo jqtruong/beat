@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+# index=0 record 3>/tmp/out.wav
+
+
+# init variables and setup
+out=/tmp/$(date +"%a-%H%M%S").record
+pa_sources=()
+
+export AWKPATH=$(dirname $0)
+
+# parse PA sources
+pa_sources_list=$(pacmd list-sources | grep -A1 "index:" | awk -f parse-pa.awk)
+
+# record index and name for each source
+while read src_index src_name
+do pa_sources[src_index]=$src_name
+done < <(echo "$pa_sources_list" | tail +2)
+
+# index can be specified on the command line, else prompt user to select from
+# list
+[[ -n $index ]] || {
+    echo >&2
+    echo >&2 "PulseAudio's sources list:"
+    echo >&2 "--------------------------"
+    echo >&2
+    echo >&2 "$pa_sources_list"
+    echo >&2
+
+    read -p "Enter source index: " index
+}
+
+source=${pa_sources[index]}
+echo >&2 "you chose: $source"
+
+
+# record from source into fd 3
+parec -d "$source" --file-format=wav >&3
+wait

@@ -1,8 +1,6 @@
 #!/bin/awk -f
 
-BEGIN {
-  pi = atan2(0, -1)
-}
+@include "init.awk"
 
 action == "comments" && /^;/ { print $0 }
 
@@ -22,9 +20,10 @@ action == "grph" && /^[^;]/ && NF > 0 {
 }
 
 action == "limits" && /^[^;]/ && NF > 0 {
-  deg = to_deg($2)
-  max = deg > max ? deg : max
-  min = deg < min ? deg : min
+  ch1_max = $2 > ch1_max ? $2 : ch1_max
+  ch1_min = $2 < ch1_min ? $2 : ch1_min
+  ch2_max = $3 > ch2_max ? $3 : ch2_max
+  ch2_min = $3 < ch2_min ? $3 : ch2_min
 }
 
 action == "stretch" && /^[^;]/ && NF > 0 {
@@ -44,13 +43,9 @@ END {
   }
 
   if (action == "limits") {
-    print "min:", min
-    print "max:", max
+    print "min:", ch1_min, ch2_min
+    print "max:", ch1_max, ch2_max
   }
 
   if (action == "sum") print "sum:", sum_acc
-}
-
-function to_deg(wav) {
-   return wav * 180/pi
 }

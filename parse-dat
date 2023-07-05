@@ -1,0 +1,61 @@
+#!/bin/bash
+#
+# convert a wav file into dat format
+# $ sox in.wav wav.dat
+#
+# run this script to output meta, scaled, and in json
+# $ dat-json <wav.dat 3>/tmp/out.meta.json 4>/tmp/out.scaled.dat 5>/tmp/out.scaled.json
+#
+# from https://www3.nd.edu/~dthain/courses/cse20211/fall2013/wavfile/,
+# "A waveform is simply a sequence of digital values that describe how
+# a speaker is to be physically pulsed by an digital-to-analog (DAC)
+# converter."
+#
+# decibels are calculated from a given Intensity of sound (in Watt
+# over square meter) with 10*l(I/(10^-12))/l(10)
+
+
+if [[ $# -gt 0 ]]
+then
+    >&2 cat <<EOM
+Usage: $(basename $0) <in.dat [1>/tmp/out.scaled.dat] [3>/tmp/out.meta.json]
+
+File descriptors descriptions:
+- 0: input dat file for wav values to parse
+- 3: wav dat meta data
+
+Optional env variables:
+- SCALE: multiply to \`ratio' between max abs wav length and 1 unit
+EOM
+     exit
+fi
+
+
+# set wav data
+read -d '' wav_dat
+
+
+# init variables and setup
+# TODO: move this out to a common init file
+BEAT=$(dirname $0)
+export AWKPATH=$BEAT
+
+
+# optional env vars
+[[ -n $BEAT_SCALE     ]] || BEAT_SCALE=1
+[[ -n $BEAT_TRANSLATE ]] || BEAT_TRANSLATE=0
+
+
+# scale and translate values to image coordinates
+echo "$wav_dat"                      |
+    awk -v scale=$BEAT_SCALE         \
+	-v translate=$BEAT_TRANSLATE \
+	-f "$BEAT"/scale-dat.awk
+
+
+# collect and output meta data in JSON to fd 3
+if { >&3; } 2>/dev/null
+then
+    json_meta=$(echo "$wav_dat" | awk -f "$BEAT"/dat-meta.awk)
+    echo >&3 "$json_meta"
+fi

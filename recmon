@@ -29,8 +29,11 @@ out=${1-/tmp/beat-recmon.$(date +"%s")}
 # go!! #
 ########
 
-set_monitor
-parec -d "$monitor" --file-format=wav "$out".wav
+# set_monitor
+# parec -d "$monitor" --file-format=wav "$out".wav
+parec -d "$(pactl get-default-source)" --file-format=wav "$out".wav
+# parec --monitor-stream 0 --file-format=wav "$out".wav
+[[ $? == 0 ]] || exit
 wait
 
 # remove silence, etc. with ffmpeg audio filters
@@ -44,5 +47,7 @@ EOM
 
     ffmpeg -i "$out".wav \
         -af "$audio_filters" \
-        "$out".silenceremove.wav
+        "$out".tmp.wav
 }
+
+mv "$out".tmp.wav "$out".wav

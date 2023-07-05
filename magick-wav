@@ -1,0 +1,92 @@
+#!/bin/bash
+
+
+#########
+# FUNCS #
+#########
+
+set-dimensions() {
+    group_size=$(echo "ceil($num_wavs / $screen_height)" | bc -l ~/Code/bash/bc/main.bc)
+    height=$(echo "$num_wavs / $group_size" | bc) # truncated/floor
+    full_width=$(echo "$screen_width * $height / $screen_height" | bc)
+    channel_width=$(echo "$full_width / $num_channels" | bc)
+    x_origin=$(echo "$channel_width / 2" | bc)
+}
+
+
+write-draw-ops() {
+    echo "$dat_in" |
+	awk \
+	    -v group_size=$group_size \
+	    -v scale=$x_origin \
+	    -v translate=$x_origin \
+	    -f "$BEAT"/dat-im-draw-line.awk
+}
+
+
+########
+# INIT #
+########
+
+BEAT=$(dirname $0)
+export AWKPATH=$BEAT
+
+channel_width=
+full_width=
+group_size=
+height=
+screen_height=1350		# TODO: get them from sway
+screen_width=2160
+x_origin=
+
+
+########
+# MAIN #
+########
+
+# if the `dat' file has DOS newlines, AWK will not read the correct
+# number of columns, i.e. NF will be 4 instead of 3, in a two-channels
+# file.
+dat_in=$(</dev/stdin)		# much faster than `read'
+
+
+read duration \
+     max \
+     min \
+     num_channels \
+     num_wavs \
+     sample_rate \
+     <<< "$(echo "$dat_in" | awk -f "$BEAT"/dat-meta.awk)"
+echo >&2 "$duration $max $min $num_channels $num_wavs $sample_rate"
+
+
+set-dimensions
+echo >&2 $channel_width $full_width $group_size $height $x_origin
+
+
+# scale and translate values to image coordinates
+if { >&3; } 2>/dev/null
+then
+    draw_ops=$(write-draw-ops 2>&3)
+    (
+	IFS=$'-'
+	printf >&3 -- "-%s\n" ${draw_ops:1}
+    )
+else
+    draw_ops=$(write-draw-ops 2>/dev/null)
+fi
+exit
+
+# full command
+cmd=(
+    "magick"			# IM cli
+    "-stroke SkyBlue"		# color
+    "-strokewidth 1"		# line width
+    "-size ${channel_width}x${height}"
+    "xc:none"
+    "$draw_ops"
+    "show:"			# output
+)
+
+# echo "${cmd[@]}"
+eval "${cmd[@]}"

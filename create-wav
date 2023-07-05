@@ -1,26 +1,16 @@
-#!/bin/awk -f
+#!/bin/bash
 
-@include "init.awk"
-BEGIN {
-  RS = "\r\n"
-  timed = 1
-  for (i=1; i<=end; i++)
-    print_frame(act_on_frame(i))
-}
 
-function act_on_frame(i) {
-  switch (action) {
-    case "sine_wave":
-      if (!repeat) repeat = 1
-      wav = sine_wave(i)
-      return wav " " wav
-      break
+# output file
+out=/tmp/sine-$1
 
-    default:
-      return i
-  }
-}
+# create dat file with awk
+awk -v frequency=$1                     \
+    -f "$(dirname "$0")"/create-wav.awk \
+    >$out.dat
 
-function sine_wave(i) {
-   return sprintf("%20s", sin(i/end*repeat*2*pi))
-}
+# convert dat to wav file
+sox $out.dat $out.wav
+
+# play the created wav file
+play $out.wav

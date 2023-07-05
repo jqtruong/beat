@@ -1,0 +1,117 @@
+#!/bin/bash
+
+
+#########
+# FUNCS #
+#########
+
+_call_awk() {
+    export AWKPATH=$beat
+    awk $(_print_awk_vars) -f "$_awk_script" "$_awk_file"
+}
+
+_print_awk_vars() {
+    for kv in "${_awk_vars[@]}"
+    do
+        read key value <<< "$kv"
+        echo -n "-v $key=$value "
+    done
+}
+
+decuple() {
+    local nth=${2:-$(nlen $1)}
+    bc <<< "$1 * 10^$nth" | cut -d. -f1
+}
+
+get_random_ch1_value() {
+    echo $ch1_dat | cut -d\  -f$((RANDOM % s_data + 1))
+}
+
+nlen() {
+    local decimals=${1#*.}
+    echo ${#decimals}
+}
+
+parse_dat() {
+    _awk_file=$filename.dat
+    _awk_script=$beat/parse-dat.awk
+    _awk_vars=()
+
+    while read key value
+    do
+        eval "$key=\"$value\""
+        [[ $key =~ ch[0-9]_dat ]] || echo "$key: $value"
+    done <<< $(_call_awk)
+}
+
+set_limits() {
+    echo
+}
+
+
+########
+# INIT #
+########
+
+. ~/Code/bash/.blang
+
+argc=$#
+argv=("$@")
+
+beat=$(dirname $0)
+
+# TODO set from the command
+filename="/home/nymo/Desktop/hello/adele"
+
+ch1_dat=
+ch2_dat=
+duration=
+max=
+min=
+rate=44100
+s_data=
+
+
+########
+# MAIN #
+########
+
+# the web app json only needs vertices per channel, and dimensions to fit them
+# in, but that can be calculated further based on how many representations are
+# drawn. if this script can provide the interpolated wav values from -1 to 1,
+# the web app can handle further interpolation into smaller dimensions.
+
+parse_dat $filename.dat
+
+# interpolate channels
+
+diff=$(echo "$max - $min" | bc)
+echo "the diff between $min and $max is $diff"
+
+echo "diff has $(nlen $diff) digits"
+echo "decupled $diff is $(decuple $diff)"
+
+# intermediary interpolation to translate from the source's range, starting from 0
+interm_interp=(0 $(decuple $diff))
+interm_diff="(${interm_interp[1]} - ${interm_interp[0]})"
+
+# output range interpolation
+out_interp=(-1 0)
+out_diff="(${out_interp[1]} - ${out_interp[0]})"
+
+unit_ratio_form="$out_diff / $interm_diff"
+unit_ratio=$(bc -l <<< "$unit_ratio_form")
+
+echo "unit ratio is $unit_ratio"
+
+# .o0(given a wav value, what is its position between $min and $max, as an
+# index of $interm?)
+
+random_value=-.00285339355500000000 # $(get_random_ch1_value)
+echo "$random_value is a random wav value from \$ch1_dat"
+
+interp_pos=$(decuple $(bc -l <<< "$random_value - $min") $(nlen $diff))
+echo "its interpolated position is $interp_pos"
+
+interp_value=$(bc -l <<< "${out_interp[0]} + $interp_pos * $unit_ratio")
+echo "its interpolated value is $interp_value"
